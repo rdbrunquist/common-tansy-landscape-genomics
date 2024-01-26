@@ -1,0 +1,29 @@
+
+Common tansy landscape genomics sequencing information
+
+Tansy were collected from across populations in MN with some added samples from Finland and Oregon.
+We sequenced one individual per population from 182 populations (176 within the state of MN). 
+
+Sequencing pipeline: Illumina NextSeq details from the sequencing facility below.
+The GBS fastq data for project Moeller_Project_033 (GBS: 182 Common Tansy DNA samples - BamHI + NsiI) is now available.
+
+Notes:
+1) Created 182 dual-indexed GBS libraries using enzyme combination BamHI + NsiI.
+2) Combined all libraries into a single pool and sequenced on a NextSeq 1x150-bp run.
+3) Generated ≈ 320M pass filter reads for the run.
+4) All expected barcodes and samples detected. Reads are well balanced.  
+5) Mean quality scores ≥Q30 for all libraries.
+6) Configuration of data reads and a script for trimming can be found at the following link: https://bitbucket.org/jgarbe/gbstrim
+
+Reads were demultiplexed by the sequencing facility.
+Removed adapters using the provided perl scripts that enables Cutadapt and includes the Facility-specific adapter sequences.
+We used trimmomatic to trim all reads to 120bp based on quality score. 
+Preliminary analysis indicated that the samples from Oregon, which were collected via a parks service, were probably Tansy Ragwort and there was a miscommunication about the collections. We therefore excluded these samples for the final run of stacks to align sequences and identify Common Tansy SNPs/Loci.
+
+Initial alignment and SNP calling was accomplished in stacks 2.59
+Parameters used in Stacks pipeline (ustacks, cstacks, gstacks): M = 2; n = 2; m = 3
+Most loci only included one SNP, but there was a large population of loci that included >1 SNP.
+
+We then ran the Populations function in stacks to filter and write out loci for further basic population genetic analysis. For each locus we only wrote out one random SNP in order to maintain locus independence during downstream analyses. Loci were included if they were present in at least 70% of individuals, had a minor allele frequency (MAF) of at least 1%, and had a maximum heterozygosity of <=95%. We also retained a dataset that included all SNPs within each locus for analyses that incorporate LD such as fineRADstructure.
+
+This led to 3690 loci of which 3071 were polymorphic. All individuals contained at least 60% of the loci, with most having information at 80-90% of loci. The average missing data was 19.6%. 
