@@ -1,0 +1,29 @@
+PLINK v1.90b6.24 64-bit (6 Jun 2021)
+Options in effect:
+  --allow-extra-chr
+  --file denovo_stacks_M2n2m3/pops_r70_plink/plink/populations.plink
+  --make-bed
+  --out tansy_plink
+
+Hostname: ln1001
+Working directory: /panfs/roc/groups/7/moeller/rbriscoe/InvasiveProj/Tansy_GBS_data
+Start time: Fri Jan 14 15:54:35 2022
+
+Random number seed: 1642197275
+128667 MB RAM detected; reserving 64333 MB for main workspace.
+Scanning .ped file... done.
+Performing single-pass .bed write (3071 variants, 178 people).
+--file: tansy_plink-temporary.bed + tansy_plink-temporary.bim +
+tansy_plink-temporary.fam written.
+3071 variants loaded from .bim file.
+178 people (0 males, 0 females, 178 ambiguous) loaded from .fam.
+Ambiguous sex IDs written to tansy_plink.nosex .
+Using 1 thread (no multithreaded calculations invoked).
+Before main variant filters, 178 founders and 0 nonfounders present.
+Calculating allele frequencies... done.
+Total genotyping rate is 0.804368.
+3071 variants and 178 people pass filters and QC.
+Note: No phenotypes present.
+--make-bed to tansy_plink.bed + tansy_plink.bim + tansy_plink.fam ... done.
+
+End time: Fri Jan 14 15:54:35 2022
