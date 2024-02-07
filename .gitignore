@@ -4,3 +4,5 @@ archive/
 .RData
 .Ruserdata
 .DS_Store
+common-tansy-landscape-genomics_cache/
+common-tansy-landscape-genomics_files/
