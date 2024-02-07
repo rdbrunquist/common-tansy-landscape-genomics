@@ -1,0 +1,17 @@
+[general]
+[georeference]
+nrows=706
+ncols=929
+xmin=-97.2333299999999952
+ymin=43.5
+xmax=-89.4916699999999992
+ymax=49.3833300000000008
+projection=+proj=longlat +datum=WGS84 +no_defs
+[data]
+datatype=FLT4S
+nodatavalue=-3.4028234663852886e+38
+byteorder=little
+nbands=1
+minvalue=1.87874031066894531
+maxvalue=149.357955932617188
+categorical=FALSE

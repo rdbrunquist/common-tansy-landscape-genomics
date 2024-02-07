@@ -1,0 +1,11 @@
+"surface","mean"
+"mean_temp_warm_q",0.00190683880254408
+"precip_warm_q",0.275267243510013
+"min_temp_cold_m",0.017842476125062
+"land_class",0.435701393614127
+"imperv",0.0029816218981957
+"soil_comp_pca1_transpose_bb",0.00655421523775416
+"soil_comp_pca2_transpose_bb",0.00190683880254408
+"soil_min_pca1_transpose_bb",0.00190683880254408
+"soil_min_pca2_transpose_bb",0.0129373056012579
+"drainage_bb",0.242995227605958

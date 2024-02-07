@@ -1,0 +1,109 @@
+Summary from multisurface optimization run conducted on 2023-02-09 
+ --- GA package summary output ---  
+
+
+── Genetic Algorithm ─────────────────── 
+
+GA settings: 
+Type                  =  real-valued 
+Population size       =  470 
+Number of generations =  1000 
+Elitism               =  24 
+Crossover probability =  0.85 
+Mutation probability  =  0.125 
+Search domain = 
+        x1   x2      x3   x4   x5      x6   x7   x8      x9 x10  ...      x46
+lower 1.00  0.5 1.0e-03 1.00  0.5 1.0e-03 1.00  0.5 1.0e-03   1       4.0e-04
+upper 9.99 14.5 2.5e+03 9.99 14.5 2.5e+03 9.99 14.5 2.5e+03   1       2.5e+03
+          x47
+lower 4.0e-04
+upper 2.5e+03
+Suggestions = 
+      x1        x2        x3 x4        x5         x6 x7        x8         x9
+1      3 4.5095680 2150.7280  7 0.8507299 1834.92968  1 9.5279590  335.23241
+2      1 6.2067336 1845.4004  9 8.0346266 2167.27028  3 5.8483385  842.63337
+3      7 9.2096177 1589.9700  1 6.6432553  835.89471  1 3.6058826 1635.00797
+4      1 0.1839706 1226.9213  5 5.0129321 2187.69047  3 4.9857281 1970.52592
+5      3 7.2593815 1731.8249  1 8.9303612 1121.64196  9 0.4581337   61.23616
+6      9 3.1468984 1460.8693  7 1.0150803  454.56681  3 9.1090853 1513.99578
+7      7 1.3224601 1740.3569  5 5.9630357   79.69396  7 3.6409052 1949.31643
+8      9 4.1349241 1895.7520  9 8.8422807 2185.04098  1 5.6930112 1307.58470
+9      9 2.3661718  971.0147  7 5.6053985  548.14088  5 3.8472835 1331.42278
+10     9 1.1896215  795.6066  5 5.3051597 1018.03031  9 3.3878012  842.10884
+ ...                                                                        
+469    7 8.7094300  443.8907  9 9.4418610  455.97552  5 0.5159686 1930.00409
+470    3 9.3722361  511.6973  3 4.4214196  764.58214  5 3.1993145 1435.71816
+      x10  ...           x46          x47
+1       1          0.8621584 8.647673e-01
+2       1          0.1922460 6.571123e+02
+3       1       1340.1438213 4.372733e-02
+4       1          0.4029906 8.176617e+02
+5       1          0.8968710 1.860209e+03
+6       1       2281.3842184 2.376101e+03
+7       1          0.0330728 3.772451e+02
+8       1          0.3136961 4.188001e+02
+9       1        545.3654491 3.026849e-01
+10      1       1962.6760691 2.120869e+03
+ ...                                     
+469     1          0.4624368 1.379429e+03
+470     1       1804.7775369 7.956110e-01
+
+GA results: 
+Iterations             = 62 
+Fitness function value = 51500.2 
+Solution = 
+           x1       x2       x3 x4       x5       x6 x7       x8       x9 x10
+[1,] 9.797429 3.404449 1371.835  7 8.913221 2464.497  7 1.013514 2015.925   1
+      ...        x46      x47
+[1,]       0.7251695 0.705046
+
+ --- ResistanceGA summary output ---  
+
+Optimized using: CIRCUITSCAPE.jl 
+
+Objective function: LL 
+
+Surfaces included in optimization: 
+mean_temp_warm_q precip_warm_q min_temp_cold_m land_class imperv soil_comp_pca1_transpose_bb soil_comp_pca2_transpose_bb soil_min_pca1_transpose_bb soil_min_pca2_transpose_bb drainage_bb 
+
+k =  48 
+
+Minimum AIC: -102904.397767311 
+
+AICc: -102866.765767311 
+
+Pseudo marginal R-square (R2m): 0.12011234976646 
+Pseudo conditional R-square (R2c): 0.539522344012696 
+
+Log Likelihood: 51500.1988836553 
+
+Optimized values for each surface: 
+9.797429 3.404449 1371.835 7 8.913221 2464.497 7 1.013514 2015.925 1 813.3338 549.9292 0.02853176 0.05070683 0.7616674 0.2396486 0.7244688 0.7349046 2413.867 1136.47 2016.745 852.1338 0.7215226 2403.094 1 4.281067 1583.808 5 1.663383 292.1808 9 1.281695 1863.501 3 6.458829 366.721 1 4.012468 1628.872 1 1293.417 792.1468 2001.039 1310.971 0.2275549 0.7251695 0.705046 
+
+
+----- Final MLPE model fit using REML ----- 
+Linear mixed model fit by REML ['lmerMod']
+
+REML criterion at convergence: -102973.2
+
+Scaled residuals: 
+     Min       1Q   Median       3Q      Max 
+-13.6015  -0.5306   0.0817   0.6462   3.1191 
+
+Random effects:
+ Groups   Name        Variance  Std.Dev.
+ pop      (Intercept) 5.396e-05 0.007346
+ Residual             5.889e-05 0.007674
+Number of obs: 15051, groups:  pop, 174
+
+Fixed effects:
+             Estimate Std. Error t value
+(Intercept) 0.1071452  0.0011156   96.05
+cd          0.0039195  0.0001785   21.96
+
+Correlation of Fixed Effects:
+   (Intr)
+cd 0.000 
+
+
+Optimization took 139066.764 seconds to complete 

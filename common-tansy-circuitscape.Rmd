@@ -1,0 +1,370 @@
+---
+title: "Common Tansy CircuitScape"
+author: "Ryan Briscoe Runquist"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: united
+    highlight: tango
+    code_folding: hide
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(cache = FALSE)
+```
+
+```{r}
+#Libraries
+library(adegenet)
+library(vcfR)
+library(poppr)
+library(ape)
+library(viridis)
+library(wordcloud)
+library(sp)
+library(sf)
+library(rgdal)
+library(adespatial)
+library(rgeos)
+library(maps)
+library(maptools)
+library(ggplot2)
+library(pals)
+library(rcartocolor)
+library(dbscan)
+library(plotly)
+library(gg3D)
+library(akima)
+library(vegan)
+library(hierfstat)
+library(pegas)
+library(dplyr)
+library(tidyr)
+library(raster)
+library(groc)
+library(qvalue)
+library(fields)
+library(gridExtra)
+library(magick)
+library(rasterVis)
+library(pdftools)
+library(ecodist)
+```
+
+## Data used to optimize resistance surfaces {.tabset .tabset-pills}
+
+### Genomic Dataset
+
+```{r data}
+#Once genotype data is read into R is must be converted into a genind object or other objects (e.g. genlight or genpop) to be useable by adegenet, adespatial, and poppr
+
+#reading in vcf file
+tansy_vcf <- read.vcfR("data/stacks_populations_output/populations.snps.vcf")
+pops <- read.csv("data/tansy_pop_info_allsamples.csv")
+
+#converting vcf data object into a genind object that is used in adegent and adespatial
+tansy_genind <- vcfR2genind(tansy_vcf)
+pop(tansy_genind) <- pops[,2]
+ploidy(tansy_genind) <- 2
+rownames(tansy_genind@tab) <- pops[,3]
+
+#Fill NAs with mean allele frequency
+tansy_tab <- tab(tansy_genind, NA.method = "mean")
+
+#convert into other data objects that are used by poppr and adegenet/adespatial
+tansy_genclone <- poppr::as.genclone(tansy_genind)
+tansy_genlight <- vcfR2genlight(tansy_vcf)
+tansy_loci <- vcfR2loci(tansy_vcf)
+tansy_genpop <- genind2genpop(tansy_genind, quiet = TRUE)
+tansy_hierfstat <- genind2hierfstat(tansy_genind)
+
+```
+### Population Geography
+
+```{r colors, include=FALSE}
+ECS_cols <- c("#D0FCFF", "#D2F2FD", "#59E0FE", "#85C1FE", 
+              "#8CB3A6", "#4EC2CA", "#B097B1", "#B8C4D1", 
+              "#B2B3E4", "#8882CD", "#C3AAFD", "#C8C9E3", 
+              "#7C7B52", "#CBE7A5", "#6B8C47", "#B8C091", 
+              "#BEFFBC", "#FEC3C3", "#FDFC84", "#FFFBCE", 
+              "#FEC83C", "#9e9e9e", "#0a0a0a")
+
+MN_multipoly <- st_read("spatial data/STUSPS_MN.gpkg")
+MN_poly <- sf::as_Spatial(MN_multipoly$geom)
+
+#State lines object for ploting state lines in levelplots
+load("spatial data/State_Shapes/StateLinesObj.rda")
+
+```
+
+```{r geography, eval=TRUE}
+#Plot of sites (mostly MN)
+
+#Read in coordinates
+xy <- pops[,5:6] #lat/lon of each of the populations in the dataset
+coordinates(xy) <- ~ lon + lat
+proj4string(xy) <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
+
+# plot(xy, xlim = c(-93, -92), ylim = c(43, 50), pch = 19, cex = 0.1)
+# textplot(xy@coords[,1], xy@coords[,2], words = rownames(tansy_tab), cex = 0.25, new = FALSE)
+
+pops$geo_grp <- as.factor(pops$geo_grp)
+pops$ECS_fac2 <- as.factor(pops$ECS_fac2)
+pops_df <- pops
+coordinates(pops) <- ~ lon + lat
+proj4string(pops) <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
+
+```
+
+```{r}
+#For use in population level stats where Finland is removed
+tansy_genind_pop <- tansy_genind
+tansy_genind_pop$other$xy <- xy@coords
+
+nums <- seq(1:178)
+fin_pops <- grep("FINLAND", pops_df$name)
+wis_pops <- grep("WIS", pops_df$name)
+nonMN_pops <- c(fin_pops, wis_pops)
+MN_which <- which(!is.element(nums, nonMN_pops))
+MN_pops <-MN_which
+pops_df <- pops_df[MN_pops,]
+
+xy_MN <- as_tibble(xy@coords[MN_pops,])
+#write.csv(xy_MN, file = "data/xy_MN.csv", row.names = FALSE)
+xy_MN$ID <- MN_pops
+coordinates(xy_MN) <- ~ lon + lat
+proj4string(xy_MN) <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
+
+tansy_genind_pop_MN <- tansy_genind_pop[MN_pops,]
+tansy_genpop_pop_MN <- genind2genpop(tansy_genind_pop_MN, quiet = TRUE)
+tansy_hierfstat_pop_MN <- genind2hierfstat(tansy_genind_pop_MN)
+```
+
+```{r eco_region}
+midwest <- map_data("county", "minnesota")
+midwest <- midwest[midwest$long > -100 & midwest$long < -89.5 &
+                         midwest$lat > 41 & midwest$lat < 52,]
+
+MNsites <- ggplot() + geom_path(data = midwest, mapping = aes(x = long, y = lat, group = group), color = "gray") +
+  geom_point(data = pops_df, mapping = aes(x = lon, y = lat, col = ECS_SUBSEC, group = name)) +
+  scale_color_manual(values = ECS_cols) +
+  coord_fixed(ratio = 1.5) +
+  theme_bw()
+
+ggplotly(MNsites)
+
+```
+
+### Circuitscape sample code
+
+Circuitscape scripts were run on a cluster
+
+
+
+
+
+### Circuitscape Optimized Resistance Surfaces
+
+
+```{r}
+#Circuitscape rasters
+
+precip_warm_q_rast <- stack("data/circuitscape_results/ind_varb_results/precip_warm_q_resist.tif")
+proj4string(precip_warm_q_rast) <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
+
+drainage_rast <- stack("data/circuitscape_results/ind_varb_results/drainage_resist.tif")
+proj4string(drainage_rast) <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
+
+imperv_rast <- stack("data/circuitscape_results/ind_varb_results/imperv_resist.tif")
+proj4string(imperv_rast) <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
+
+land_class_rast <- stack("data/circuitscape_results/ind_varb_results/land_class_resist.tif")
+proj4string(land_class_rast) <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
+
+mean_temp_warm_q_rast <- stack("data/circuitscape_results/ind_varb_results/mean_temp_warm_q_resist.tif")
+proj4string(mean_temp_warm_q_rast) <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
+
+min_temp_cold_m_rast <- stack("data/circuitscape_results/ind_varb_results/min_temp_cold_m_resist.tif")
+proj4string(min_temp_cold_m_rast) <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
+
+soil_comp_pc1_rast <- stack("data/circuitscape_results/ind_varb_results/soil_comp_pc1_resist.tif")
+proj4string(soil_comp_pc1_rast) <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
+
+soil_comp_pc2_rast <- stack("data/circuitscape_results/ind_varb_results/soil_comp_pc2_resist.tif")
+proj4string(soil_comp_pc2_rast) <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
+
+soil_min_pc1_rast <- stack("data/circuitscape_results/ind_varb_results/soil_min_pc1_resist.tif")
+proj4string(soil_min_pc1_rast) <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
+
+soil_min_pc2_rast <- stack("data/circuitscape_results/ind_varb_results/soil_min_pc2_resist.tif")
+proj4string(soil_min_pc2_rast) <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
+
+```
+
+
+
+```{r}
+
+precip_warm_q_p <- levelplot(precip_warm_q_rast, col.regions = rev(magma(256)), margin = FALSE, main = "Precip Warmest Q") +
+  spplot(states.lines.crop, col.regions = "slateblue1")
+
+
+drainage_p <- levelplot(drainage_rast, col.regions = rev(magma(256)), margin = FALSE, main = "Drainage") +
+  spplot(states.lines.crop, col.regions = "slateblue1")
+
+
+land_class_p <- levelplot(land_class_rast, col.regions = rev(magma(256)), margin = FALSE, main = "Land Classification") +
+  spplot(states.lines.crop, col.regions = "slateblue1")
+
+
+mean_temp_warm_q_p <- levelplot(mean_temp_warm_q_rast, col.regions = rev(magma(256)), margin = FALSE, main = "Mean Temp of Warmest Q") +
+  spplot(states.lines.crop, col.regions = "slateblue1")
+
+
+min_temp_cold_m_p <- levelplot(min_temp_cold_m_rast, col.regions = rev(magma(256)), margin = FALSE, main = "Min Temp of Coldest Month") +
+  spplot(states.lines.crop, col.regions = "slateblue1")
+
+
+soil_comp_pc1_p <- levelplot(soil_comp_pc1_rast, col.regions = rev(magma(256)), margin = FALSE, main = "Soil Comp PC1") +
+  spplot(states.lines.crop, col.regions = "slateblue1")
+
+
+soil_comp_pc2_p <- levelplot(soil_comp_pc2_rast, col.regions = rev(magma(256)), margin = FALSE, main = "Soil Comp PC2") +
+  spplot(states.lines.crop, col.regions = "slateblue1")
+
+
+soil_min_pc1_p <- levelplot(soil_min_pc1_rast, col.regions = rev(magma(256)), margin = FALSE, main = "Soil Mineral PC1") +
+  spplot(states.lines.crop, col.regions = "slateblue1")
+
+
+soil_min_pc2_p <- levelplot(soil_min_pc2_rast, col.regions = rev(magma(256)), margin = FALSE, main = "Soil Mineral PC2") +
+  spplot(states.lines.crop, col.regions = "slateblue1")
+
+
+imperv_p <- levelplot(imperv_rast, col.regions = rev(magma(256)), margin = FALSE, main = "Impervious Surfaces") +
+  spplot(states.lines.crop, col.regions = "slateblue1")
+
+
+paste("Precipitation in the warmest quarter: Resistance appears lower in the eastern half of Minnesota where it is wetter in the summer. The data transformation used was an inverse-reverse Ricker.")
+precip_warm_q_p
+
+paste("Mean temperature of the warmest quarter: Resistance appears lower in the northern half of Minnesota where it is cooler in the summer. The data transformation used was an inverse-reverse Ricker.")
+mean_temp_warm_q_p
+
+paste("Minimum temperature of the coldest month: Resistance appears lower in the southern half of Minnesota it is warmer in the winter. The data transformation used was an inverse-reverse Ricker.")
+min_temp_cold_m_p
+
+paste("Soil Composition PC1: Resistance is higher in the northern half of Minnesota where there are sandier soils and lower in the south with clay soils. The data transformation was a reverse Ricker.")
+soil_comp_pc1_p
+
+paste("Soil Composistion PC2: Resistance is realtively high for this entire layer with only a moderate drop in the central MN where there are areas of slightly higher PC2 values that indicate greater bulk volume density. The data transformation was a Ricker function.")
+soil_comp_pc2_p
+
+paste("Soil Mineral PC1: Resistance is generally low across the state and is slightly lower in eastern Minnesota where there is greater nitrogen. The data transformation was an inverse Ricker function.")
+soil_min_pc1_p
+
+paste("Soil Mineral PC2: Resistance is generally high across the state and is slightly lower in the Rainy river/Rainy Lake region where there is greater carbon content. The data transformation was an Ricker function.")
+soil_min_pc2_p
+
+paste("Drainage Class: Resistance is especially high for the more poorly drained soils.")
+drainage_p
+
+paste("Land Classification: Resistance is especially high for cropland/culitvated areas, hay/pastures, and grasslands.")
+land_class_p
+
+paste("Percentage impervious surfaces: Impervious surfaces had lower resistance.")
+imperv_p
+```
+
+
+
+```{r}
+#Genetic Chord Distance
+
+tansy_gen_dist_mat <- as.dist(scale(as.matrix(read.csv("data/MN_tansy_gen_chord_dist_matrix.csv", header = T))))
+
+#Spatial Distances
+MN_geodist <- as.dist(fields::rdist.earth(xy_MN@coords))
+
+```
+
+
+```{r}
+#Read in and scale resistance matrices then convert to 'dist' matrices for analysis
+
+#pure resistance base on distance matrix
+dist_mat <- as.dist(scale(as.matrix(read.csv("data/circuitscape_results/ind_varb_results/drainage/Distance_jlResistMat.csv", header = F))))
+
+#Resistance matrices based on circuitscape optimizations
+drainage_rast <- as.dist(scale(as.matrix(read.csv("data/circuitscape_results/ind_varb_results/drainage/drainage_bb_jlResistMat.csv", header = F))))
+imperv_rast <- as.dist(scale(as.matrix(read.csv("data/circuitscape_results/ind_varb_results/imperv_surf/imperv_jlResistMat.csv", header = F))))
+land_class_rast <- as.dist(scale(as.matrix(read.csv("data/circuitscape_results/ind_varb_results/Land_class_results/land_class_jlResistMat.csv", header = F))))
+mean_temp_warm_q_rast <- as.dist(scale(as.matrix(read.csv("data/circuitscape_results/ind_varb_results/mean_temp_warm_q/mean_temp_warm_q_jlResistMat.csv", header = F))))
+min_temp_cold_m_rast <- as.dist(scale(as.matrix(read.csv("data/circuitscape_results/ind_varb_results/min_temp_cold_m/min_temp_cold_m_jlResistMat.csv", header = F))))
+soil_comp_pc1_rast <- as.dist(scale(as.matrix(read.csv("data/circuitscape_results/ind_varb_results/soil_comp_pc1/soil_comp_pca1_transpose_bb_jlResistMat.csv", header = F))))
+soil_comp_pc2_rast <- as.dist(scale(as.matrix(read.csv("data/circuitscape_results/ind_varb_results/soil_comp_pc2/soil_comp_pca2_transpose_bb_jlResistMat.csv", header = F))))
+soil_min_pc1_rast <- as.dist(scale(as.matrix(read.csv("data/circuitscape_results/ind_varb_results/soil_min_pc1/soil_min_pca1_transpose_bb_jlResistMat.csv", header = F))))
+soil_min_pc2_rast <- as.dist(scale(as.matrix(read.csv("data/circuitscape_results/ind_varb_results/soil_min_pc2/soil_min_pca2_transpose_bb_jlResistMat.csv", header = F))))
+
+```
+
+
+```{r}
+
+multisurf_run1_rast <- stack("data/circuitscape_results/multi_varb_results/multi-surface_results/clim + landclass + imperv + soil/MN_clipped_run1_multisurf_resist.tif")
+proj4string(multisurf_run1_rast) <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
+
+multisurf_run1_rast_scale <- scale(multisurf_run1_rast)
+
+multisurf_run2_rast <- stack("data/circuitscape_results/multi_varb_results/multi-surface_results/clim + landclass + imperv + soil/MN_clipped_run2_multisurf_resist.tif")
+proj4string(multisurf_run2_rast) <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
+
+multisurf_run2_rast_scale <- scale(multisurf_run2_rast)
+
+multisurf_run3_rast <- stack("data/circuitscape_results/multi_varb_results/multi-surface_results/clim + landclass + imperv + soil/MN_clipped_run3_multisurf_resist.tif")
+proj4string(multisurf_run3_rast) <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
+
+multisurf_run3_rast_scale <- scale(multisurf_run3_rast)
+
+
+multisurf_avg_rast <- mean(multisurf_run1_rast_scale, multisurf_run2_rast_scale, multisurf_run3_rast_scale)
+
+```
+
+
+
+```{r}
+
+multisurf_run1_p <- levelplot(multisurf_run1_rast_scale, col.regions = rev(magma(256)), margin = FALSE, main = "Multivariable Resistance Surface: Run 1") +
+  spplot(states.lines.crop, col.regions = "slateblue1")
+
+multisurf_run2_p <- levelplot(multisurf_run2_rast_scale, col.regions = rev(magma(256)), margin = FALSE, main = "Multivariable Resistance Surfaces: Run 2") +
+  spplot(states.lines.crop, col.regions = "slateblue1")
+
+multisurf_run3_p <- levelplot(multisurf_run3_rast_scale, col.regions = rev(magma(256)), margin = FALSE, main = "Multivariable Resistance Surfaces: Run 3") +
+  spplot(states.lines.crop, col.regions = "slateblue1")
+
+multisurf_avg_p <- levelplot(multisurf_avg_rast, col.regions = rev(magma(256)), margin = FALSE, main = "Multivariable Resistance Surfaces: Average") +
+  spplot(states.lines.crop, col.regions = "slateblue1")
+
+
+multisurf_run1_p
+multisurf_run2_p
+multisurf_run3_p
+```
+
+
+```{r}
+
+multisurf_avg_p_pts <- levelplot(multisurf_avg_rast, col.regions = rev(magma(256)), margin = FALSE, main = "Multivariable Resistance Surfaces: Average") + layer(sp.points(xy_MN, cex = 0.35, col = 1, pch = 19)) +
+  spplot(states.lines.crop, col.regions = "slateblue1")
+
+multisurf_avg_p_pts
+```
+
+
+

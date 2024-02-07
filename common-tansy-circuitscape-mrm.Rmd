@@ -1,0 +1,167 @@
+---
+title: "Tansy_Circuitscape_Analyses_MRM"
+author: "Ryan Briscoe Runquist"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: united
+    highlight: tango
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(cache = FALSE)
+```
+
+```{r}
+#Libraries
+
+library(viridis)
+library(ggplot2)
+library(pals)
+library(rcartocolor)
+library(plotly)
+library(gg3D)
+library(akima)
+library(vegan)
+library(dplyr)
+library(tidyr)
+library(groc)
+library(gridExtra)
+library(magick)
+library(pdftools)
+library(ecodist)
+```
+## Linear Regression of matrices {.tabset}
+
+The model includes the genetic distance matrix as the dependent variable and the null geographic distance and CircuitScape resistance distance matrices that have been optimized for each individual variable using ResistanceGA as independent variables. All matrices were scaled to be mean 0 and SD 1.
+
+* Environmental Variables included in full model
+  + Annual Precipitation
+  + Drainage Class
+  + Percentage Impervious Surfaces
+  + Land Classification
+  + Main Roads
+  + Mean Temperature of the Warmest Quarter
+  + Minimum Temperature of the Coldest Month
+  + Precipitation of the Warmest Quarter
+  + Soil Composition PC1 (CircuitScape only works on positive intergers so all values were transposed to have positive values)
+  + Soil Composition PC2 (CircuitScape only works on positive intergers so all values were transposed to have positive values)
+  + Soil Mineral PC1 (CircuitScape only works on positive intergers so all values were transposed to have positive values)
+  + Soil Mineral PC2 (CircuitScape only works on positive intergers so all values were transposed to have positive values)
+  + Traffic
+
+
+
+
+```{r}
+#Genetic Chord Distance - generated using hierFstat
+
+tansy_gen_dist_mat <- as.dist(scale(as.matrix(read.csv("data/MN_tansy_gen_chord_dist_matrix.csv", header = T))))
+
+```
+
+
+```{r}
+#Read in and scale resistance matrices then convert to 'dist' matrices for analysis
+
+#pure resistance base on distance matrix
+dist_mat <- as.dist(scale(as.matrix(read.csv("circuitscape_results/raw_results/ind_varb_results/annual_precip/Distance_jlResistMat.csv", header = F))))
+
+#Resistance matrices based on circuitscape optimizations
+ann_precip_mat <- as.dist(scale(as.matrix(read.csv("circuitscape_results/raw_results/ind_varb_results/annual_precip/ann_precip_jlResistMat.csv", header = F))))
+drainage_mat <- as.dist(scale(as.matrix(read.csv("circuitscape_results/raw_results/ind_varb_results/drainage/drainage_bb_jlResistMat.csv", header = F))))
+imperv_mat <- as.dist(scale(as.matrix(read.csv("circuitscape_results/raw_results/ind_varb_results/imperv_surf/imperv_jlResistMat.csv", header = F))))
+land_class_mat <- as.dist(scale(as.matrix(read.csv("circuitscape_results/raw_results/ind_varb_results/Land_class_results/land_class_jlResistMat.csv", header = F))))
+main_roads_mat <- as.dist(scale(as.matrix(read.csv("circuitscape_results/raw_results/ind_varb_results/main_roads/main_roads_MNbb_jlResistMat.csv", header = F))))
+mean_temp_warm_q_mat <- as.dist(scale(as.matrix(read.csv("circuitscape_results/raw_results/ind_varb_results/mean_temp_warm_q/mean_temp_warm_q_jlResistMat.csv", header = F))))
+min_temp_cold_m_mat <- as.dist(scale(as.matrix(read.csv("circuitscape_results/raw_results/ind_varb_results/min_temp_cold_m/min_temp_cold_m_jlResistMat.csv", header = F))))
+precip_warm_q_mat <- as.dist(scale(as.matrix(read.csv("circuitscape_results/raw_results/ind_varb_results/precip_warm_q/precip_warm_q_jlResistMat.csv", header = F))))
+soil_comp_pc1_mat <- as.dist(scale(as.matrix(read.csv("circuitscape_results/raw_results/ind_varb_results/soil_comp_pc1/soil_comp_pca1_transpose_bb_jlResistMat.csv", header = F))))
+soil_comp_pc2_mat <- as.dist(scale(as.matrix(read.csv("circuitscape_results/raw_results/ind_varb_results/soil_comp_pc2/soil_comp_pca2_transpose_bb_jlResistMat.csv", header = F))))
+soil_min_pc1_mat <- as.dist(scale(as.matrix(read.csv("circuitscape_results/raw_results/ind_varb_results/soil_min_pc1/soil_min_pca1_transpose_bb_jlResistMat.csv", header = F))))
+soil_min_pc2_mat <- as.dist(scale(as.matrix(read.csv("circuitscape_results/raw_results/ind_varb_results/soil_min_pc2/soil_min_pca2_transpose_bb_jlResistMat.csv", header = F))))
+traffic_mat <- as.dist(scale(as.matrix(read.csv("circuitscape_results/raw_results/ind_varb_results/traffic/traffic_MNbb_jlResistMat.csv", header = F))))
+
+tansy_dist_data <- as_tibble(cbind(as.vector(tansy_gen_dist_mat), as.vector(dist_mat), as.vector(ann_precip_mat), as.vector(drainage_mat),
+                             as.vector(imperv_mat), as.vector(land_class_mat), as.vector(main_roads_mat), as.vector(mean_temp_warm_q_mat),
+                             as.vector(min_temp_cold_m_mat), as.vector(precip_warm_q_mat), as.vector(soil_comp_pc1_mat),
+                             as.vector(soil_comp_pc2_mat), as.vector(soil_min_pc1_mat), as.vector(soil_min_pc2_mat), as.vector(traffic_mat)))
+
+colnames(tansy_dist_data) <- c("tansy_gen_dist_mat", "dist_mat", "ann_precip_mat", "drainage_mat", "imperv_mat", "land_class_mat",
+                               "main_roads_mat", "mean_temp_warm_q_mat", "min_temp_cold_m_mat", "precip_warm_q_mat", "soil_comp_pc1_mat",
+                               "soil_comp_pc2_mat", "soil_min_pc1_mat", "soil_min_pc2_mat", "traffic_mat")
+
+```
+
+### Full Model
+
+```{r}
+
+# full.mrm <- ecodist::MRM(tansy_gen_dist_mat ~ dist_mat + ann_precip_mat + drainage_mat + imperv_mat + land_class_mat + main_roads_mat + mean_temp_warm_q_mat + min_temp_cold_m_mat + precip_warm_q_mat + soil_comp_pc1_mat + soil_comp_pc2_mat + soil_min_pc1_mat + soil_min_pc2_mat + traffic_mat, nperm = 10000)
+
+full.mrm <- ecodist::MRM(tansy_gen_dist_mat ~ dist_mat + drainage_mat + imperv_mat + land_class_mat + mean_temp_warm_q_mat + min_temp_cold_m_mat + precip_warm_q_mat + soil_comp_pc1_mat + soil_comp_pc2_mat + soil_min_pc1_mat + soil_min_pc2_mat, data = tansy_dist_data, nperm = 10000)
+
+
+full.mrm
+
+```
+
+### Full Model v.2
+
+```{r}
+
+full.2.mrm <- MRM(tansy_gen_dist_mat ~ dist_mat + drainage_mat + imperv_mat + land_class_mat + mean_temp_warm_q_mat + min_temp_cold_m_mat + precip_warm_q_mat + soil_comp_pc1_mat + soil_comp_pc2_mat + soil_min_pc1_mat + soil_min_pc2_mat, data = tansy_dist_data, nperm = 10000)
+
+full.2.mrm
+
+```
+
+### Full Model v.2.1
+
+Remove all variable with P>0.2 in Full Model (v.2)
+
+```{r}
+
+full.2.1.mrm <- MRM(tansy_gen_dist_mat ~ dist_mat + drainage_mat + land_class_mat + main_roads_mat + soil_comp_pc1_mat + soil_comp_pc2_mat + soil_min_pc1_mat + soil_min_pc2_mat, data = tansy_dist_data, nperm = 10000)
+
+full.2.1.mrm
+
+```
+
+### Full Model v.2.2
+
+Remove all variable with P>0.05 in Full Model (v.2.1) (all variable are below P=0.1)
+
+```{r}
+
+full.2.2.mrm <- MRM(tansy_gen_dist_mat ~ dist_mat + land_class_mat + soil_comp_pc1_mat + soil_comp_pc2_mat + soil_min_pc1_mat + soil_min_pc2_mat, data = tansy_dist_data, nperm = 10000)
+
+full.2.2.mrm
+
+```
+
+### Climate Only Model
+
+```{r}
+
+clim.mrm <- MRM(tansy_gen_dist_mat ~ dist_mat + ann_precip_mat + mean_temp_warm_q_mat + min_temp_cold_m_mat + precip_warm_q_mat, data = tansy_dist_data, nperm = 10000)
+
+clim.mrm
+
+```
+
+
+### Climate Only Model v.2 
+remove all variables with P>0.2 (except dist which is in all models)
+
+```{r}
+
+clim.2.mrm <- MRM(tansy_gen_dist_mat ~ dist_mat + min_temp_cold_m_mat + precip_warm_q_mat, data = tansy_dist_data, nperm = 10000)
+
+clim.2.mrm
+
+```

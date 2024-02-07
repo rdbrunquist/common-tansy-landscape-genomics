@@ -1,0 +1,109 @@
+Summary from multisurface optimization run conducted on 2023-02-07 
+ --- GA package summary output ---  
+
+
+── Genetic Algorithm ─────────────────── 
+
+GA settings: 
+Type                  =  real-valued 
+Population size       =  470 
+Number of generations =  1000 
+Elitism               =  24 
+Crossover probability =  0.85 
+Mutation probability  =  0.125 
+Search domain = 
+        x1   x2      x3   x4   x5      x6   x7   x8      x9 x10  ...      x46
+lower 1.00  0.5 1.0e-03 1.00  0.5 1.0e-03 1.00  0.5 1.0e-03   1       4.0e-04
+upper 9.99 14.5 2.5e+03 9.99 14.5 2.5e+03 9.99 14.5 2.5e+03   1       2.5e+03
+          x47
+lower 4.0e-04
+upper 2.5e+03
+Suggestions = 
+      x1        x2        x3 x4       x5        x6 x7       x8         x9 x10
+1      9 0.8073668 1596.5342  9 8.174637 1969.6882  3 2.040926 2466.80328   1
+2      5 8.0784500 1635.8028  1 5.137530  383.4066  9 6.959099 1723.92252   1
+3      7 8.8237680 1082.4438  1 4.405148 1286.9078  3 7.102615 2251.93190   1
+4      5 2.6616024 2077.2013  9 8.340247  230.3491  7 3.826049 1444.05533   1
+5      1 8.8100881 2001.2063  9 2.461086 1234.4004  1 9.160126 1290.89514   1
+6      7 6.0412669 1827.8539  5 3.697460  879.5163  1 3.184282 1090.86011   1
+7      1 4.9036160 2139.0907  1 3.042504 1202.9863  7 1.617898 1617.98912   1
+8      3 6.1655658 1477.0571  1 9.635276 1946.6125  5 2.830390 1318.46985   1
+9      7 7.4754479 1781.5204  1 8.493145 1414.3395  1 1.830617 1113.20263   1
+10     1 3.0435475 2153.1590  7 1.110065 1099.3324  3 1.206749   96.23127   1
+ ...                                                                         
+469    5 3.4224074  813.8739  3 9.538218  303.9697  9 3.759546 1102.26821   1
+470    3 9.4190871 2365.6135  7 9.473230 2460.7593  7 6.187935 1990.67042   1
+       ...           x46          x47
+1              0.3376427 1333.2608160
+2              0.2492730 2234.9315241
+3              0.2494128 2220.1774467
+4           1545.5168692 1949.5376440
+5              0.5667967  618.7334890
+6           2440.7274813 2478.6266725
+7              0.3743720  820.8410230
+8           2000.2185718    0.3645522
+9           2048.1030737    0.9764851
+10             0.4970831    0.5668818
+ ...                                 
+469         1814.7585543   79.8482828
+470            0.7282826 1782.7660452
+
+GA results: 
+Iterations             = 25 
+Fitness function value = 51514.52 
+Solution = 
+     x1       x2       x3 x4       x5       x6 x7       x8       x9 x10  ... 
+[1,]  9 8.314339 199.6253  7 2.286725 287.8457  7 1.679729 1929.044   1      
+           x46      x47
+[1,] 0.9552188 1621.233
+
+ --- ResistanceGA summary output ---  
+
+Optimized using: CIRCUITSCAPE.jl 
+
+Objective function: LL 
+
+Surfaces included in optimization: 
+mean_temp_warm_q precip_warm_q min_temp_cold_m land_class imperv soil_comp_pca1_transpose_bb soil_comp_pca2_transpose_bb soil_min_pca1_transpose_bb soil_min_pca2_transpose_bb drainage_bb 
+
+k =  48 
+
+Minimum AIC: -102933.040441468 
+
+AICc: -102895.408441468 
+
+Pseudo marginal R-square (R2m): 0.182548579396336 
+Pseudo conditional R-square (R2c): 0.613067689989735 
+
+Log Likelihood: 51514.5202207339 
+
+Optimized values for each surface: 
+9 8.314339 199.6253 7 2.286725 287.8457 7 1.679729 1929.044 1 2301.649 328.3396 0.5601669 1401.518 637.7832 752.0109 0.06134593 2281.807 923.3288 743.6024 0.1902756 545.4033 0.346593 262.2853 9 3.663646 971.7103 9 7.874252 509.4549 9 1.780139 554.4565 9 3.242278 189.0788 9 1.590704 1254.812 1 16.51526 0.1021174 2444.182 0.9646672 2039.487 0.9552188 1621.233 
+
+
+----- Final MLPE model fit using REML ----- 
+Linear mixed model fit by REML ['lmerMod']
+
+REML criterion at convergence: -103002.6
+
+Scaled residuals: 
+     Min       1Q   Median       3Q      Max 
+-13.6553  -0.5332   0.0835   0.6477   3.1059 
+
+Random effects:
+ Groups   Name        Variance  Std.Dev.
+ pop      (Intercept) 6.566e-05 0.008103
+ Residual             5.865e-05 0.007658
+Number of obs: 15051, groups:  pop, 174
+
+Fixed effects:
+             Estimate Std. Error t value
+(Intercept) 0.1071452  0.0012302   87.10
+cd          0.0052616  0.0002321   22.67
+
+Correlation of Fixed Effects:
+   (Intr)
+cd 0.000 
+
+
+Optimization took 68614.497 seconds to complete 

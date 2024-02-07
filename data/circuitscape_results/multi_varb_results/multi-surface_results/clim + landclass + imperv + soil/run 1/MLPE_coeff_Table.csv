@@ -1,0 +1,3 @@
+"","Estimate","Std. Error","t value"
+"Intercept",0.107145207951827,0.00123017384868424,87.0976147529287
+"mean_temp_warm_q.precip_warm_q.min_temp_cold_m.land_class.imperv.soil_comp_pca1_transpose_bb.soil_comp_pca2_transpose_bb.soil_min_pca1_transpose_bb.soil_min_pca2_transpose_bb.drainage_bb",0.00526159784853684,0.000232092016446751,22.6703095138303
