@@ -161,11 +161,7 @@ ggplotly(MNsites)
 
 ### Circuitscape sample code
 
-Circuitscape scripts were run on a cluster
-
-
-
-
+Circuitscape scripts were run on a cluster. See scripts in the scripts/samples resistance-ga circuitscape scripts for R
 
 ### Circuitscape Optimized Resistance Surfaces
 

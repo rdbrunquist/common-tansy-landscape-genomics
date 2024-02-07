@@ -106,9 +106,9 @@ full.mrm
 ```
 
 
-### Full Model v.2.1
+### Reduced Model
 
-Remove all variable with P>0.2 in Full Model (reduced model)
+Remove all variable with P>0.2 in Reduced Model
 
 ```{r}
 
