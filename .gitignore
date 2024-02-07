@@ -6,3 +6,7 @@ archive/
 .DS_Store
 common-tansy-landscape-genomics_cache/
 common-tansy-landscape-genomics_files/
+common-tansy-circuitscape_cache/
+common-tansy-circuitscape_files/
+common-tansy-circuitscape-mrm_cache/
+common-tansy-circuitscape-mrm_files/
