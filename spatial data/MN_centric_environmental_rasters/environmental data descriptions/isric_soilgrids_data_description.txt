@@ -1,0 +1,31 @@
+Basic Soil Grid Data Metadata resources:
+
+https://files.isric.org/soilgrids/latest/data_aggregated/1000m/
+
+bdod:bulk density (https://data.isric.org/geonetwork/srv/eng/catalog.search#/metadata/0676897d-d20e-45e4-b4fd-37ddf73810d1)
+cec: cation exchange capacity @ pH7 (https://data.isric.org/geonetwork/srv/eng/catalog.search#/metadata/bebc6ad0-9b98-4328-99d3-36abe63c20df)
+cfvo:course fragment volumetric (https://data.isric.org/geonetwork/srv/eng/catalog.search#/metadata/08a70258-cfb9-46b8-8588-c2b932bbe395)
+clay: clay content (https://data.isric.org/geonetwork/srv/eng/catalog.search#/metadata/5e1605a7-5cae-4f7c-b800-9aa7f315d00d)
+nitrogen: soil total nitrogen (https://data.isric.org/geonetwork/srv/eng/catalog.search#/metadata/d95b6733-5a29-475e-ab83-478dcb8c0c20) 
+ocd: soil organic carbon density (https://data.isric.org/geonetwork/srv/eng/catalog.search#/metadata/df664518-3b23-43e8-b77b-fd4c8ebac5fd)
+phh2o:soil pH in H2O (https://data.isric.org/geonetwork/srv/eng/catalog.search#/metadata/2fdf1a33-487f-4aa7-a6b6-b2b49483ad48)
+sand: sand content (https://data.isric.org/geonetwork/srv/eng/catalog.search#/metadata/5e1605a7-5cae-4f7c-b800-9aa7f315d00d)
+silt: silt content (https://data.isric.org/geonetwork/srv/eng/catalog.search#/metadata/08a4990c-ca15-4871-8d12-ea21dae6b354)
+soc: soil organic carbon content (https://data.isric.org/geonetwork/srv/eng/catalog.search#/metadata/191be9ad-1817-43cd-9c8e-f22b8ff64294)
+wv0010: volumetric water content at 10kPa (https://data.isric.org/geonetwork/srv/eng/catalog.search#/metadata/57dc0d08-95ee-4118-8f23-9aeab65ba31b)
+wv0033: volumetric water content at 33kPa (https://data.isric.org/geonetwork/srv/eng/catalog.search#/metadata/f6ecfed7-035b-49ca-bec3-3cbd87f5aba3)
+wv1500: volumetric water content at 1500kPa (https://data.isric.org/geonetwork/srv/eng/catalog.search#/metadata/145ee3ba-76e0-4a0f-88e2-6b2df3957dab)
+
+
+Modification steps:
+1. Downloaded worldwide data in .tif aggregated form at a resolution of 1000m 
+	- Data in Interrupted Goode Homolosine projection
+2. Clipped raster to the approximate area of MN/Upper Midwest
+3. Reprojected the layer into WGS84 (EPSG:4326, OGC:CRS84 - focus on upper midwest)
+4. Clipped to the extent of the Land Used raster (-98, 43, -89, 50)
+5. Saved as an R raster (.grd)
+
+CNratio:
+
+1. Calculated CN ratio as ((soc*10)/nitrogen) for both depths.
+2. Wrote out as Geotifs and R grids 

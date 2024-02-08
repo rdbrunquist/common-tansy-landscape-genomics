@@ -1,0 +1,31 @@
+Climate variables were all accessed via worldclim.org
+
+Current (Historical) Climate: https://www.worldclim.org/data/worldclim21.html
+
+This is WorldClim version 2.1 climate data for 1970-2000. This version was released in January 2020.
+
+There are monthly climate data for minimum, mean, and maximum temperature, precipitation, solar radiation, wind speed, water vapor pressure, and for total precipitation. There are also 19 “bioclimatic” variables.
+
+The data is available at the four spatial resolutions, between 30 seconds (~1 km2) to 10 minutes (~340 km2). Each download is a “zip” file containing 12 GeoTiff (.tif) files, one for each month of the year (January is 1; December is 12).
+
+Processing:
+1. Downloaded and extracted the pre-calculated bioclimatic variables at 2.5 min and 30 sec resolutions
+2. Clipped to extent used for analysis (North America and Minnesota Centric -98,-89,43,50)
+3. Reprojected into WGS84 if necessary
+4. Exported as R rasters(.grd)
+5. In R, stacked rasters and saved as a Raster Brick
+
+
+Future Climate Projections: https://www.worldclim.org/data/cmip6/cmip6climate.html
+
+The data available here are CMIP6 downscaled future climate projections. The downscaling and calibration (bias correction) was done with WorldClim v2.1 as baseline climate.
+Monthly values of minimum temperature, maximum temperature, and precipitation were processed for nine global climate models (GCMs): BCC-CSM2-MR, CNRM-CM6-1, CNRM-ESM2-1, CanESM5, GFDL-ESM4, IPSL-CM6A-LR, MIROC-ES2L, MIROC6, MRI-ESM2-0, and for four Shared Socio-economic Pathways (SSPs): 126, 245, 370 and 585.
+The monthly values were averages over 20 year periods (2021-2040, 241-2060, 2061-2080, 2081-2100). The following spatial resolutions are available (expressed as minutes of a degree of longitude and latitude): 10 minutes, 5 minutes, 2.5 minutes.
+
+Processing:
+1. Downloaded and extracted the pre-calculated bioclimatic variables for 2.5 min resolution for all GCMs, SSPs, and time frames for which they were available (more info on SSPs in other document)
+2. Clipped to extent used for analysis (North America and Minnesota Centric -98,-89,43,50)
+3. Reprojected into WGS84 if necessary
+4. Exported as R rasters(.grd)
+
+

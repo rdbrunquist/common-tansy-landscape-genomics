@@ -1,0 +1,11 @@
+USA SSURGO - Drainage Class
+This layer classifies soils in seven classes based on the rate that water moves through the soil.
+
+0	background
+1	excessively drained
+2	moderately well drained
+3	poorly drained
+4	somewhat excessively drained
+5	somewhat poorly drained
+6	very poorly drained
+7	well drained

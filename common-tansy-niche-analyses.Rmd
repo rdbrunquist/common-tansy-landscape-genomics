@@ -1,0 +1,487 @@
+---
+title: "Common tansy ecological niche analyses"
+author: "Ryan Briscoe Runquist"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: united
+    highlight: tango
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(cache = FALSE)
+```
+
+
+
+```{r libraries}
+#Libraries
+library(raster)
+library(sp)
+library(rgdal)
+library(terra)
+library(rgeos)
+library(sf)
+library(RStoolbox)
+library(ggplot2)
+library(gbm)
+library(dismo)
+library(rJava)
+library(rmaxent)
+library(rasterVis)
+library(viridis)
+library(tidyverse)
+library(grid)
+library(gridExtra)
+library(magick)
+library(plotly)
+library(ecospat)
+library(FactoMineR)
+library(factoextra)
+```
+
+```{r colors, include=FALSE}
+ECS_cols <- c("#D0FCFF", "#D2F2FD", "#59E0FE", "#85C1FE", 
+              "#8CB3A6", "#4EC2CA", "#B097B1", "#B8C4D1", 
+              "#B2B3E4", "#8882CD", "#C3AAFD", "#C8C9E3", 
+              "#7C7B52", "#CBE7A5", "#6B8C47", "#B8C091", 
+              "#BEFFBC", "#FEC3C3", "#FDFC84", "#FFFBCE", 
+              "#FEC83C", "#9e9e9e", "#0a0a0a")
+
+ECS_cols_1 <- c("#88CCEE", "#CC6677", "#DDCC77", "#117733",
+                "#332288", "#AA4499", "#44AA99", "#999933",
+                "#882255", "#661100", "#6699CC", "#888888",
+                "#FAD3D6", "#FC9100", "#0DFEDE", "#2A6675",
+                "#A6F587", "#FF91DE", "#B8EBEE", "#FC9B94",
+                "#F25C56", "#9e9e9e")
+
+MN_multipoly <- st_read("spatial data/STUSPS_MN.gpkg")
+MN_poly <- sf::as_Spatial(MN_multipoly$geom)
+
+#State lines object for ploting state lines in levelplots
+load("spatial data/State_Shapes/StateLinesObj.rda")
+
+```
+
+## Population geography {.tabset .tabset-pills}
+
+Populations (n = 174) were chosen to span the entire distribution of Common tansy throughout the state of Minnesota. Common tansy is much more common in the northern half of the state, which is reflected in our sampling design. In the southern portion of the state, we attempted to collect plant tissue from as many reported populations as possible.
+
+```{r geography, eval=TRUE}
+
+#Read in coordinates
+pops <- read.csv("data/tansy_pop_info_mwsamples.csv")
+xy <- pops[,5:6] #lat/lon of each of the populations in the dataset
+coordinates(xy) <- ~ lon + lat
+proj4string(xy) <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
+
+# plot(xy, xlim = c(-93, -92), ylim = c(43, 50), pch = 19, cex = 0.1)
+# textplot(xy@coords[,1], xy@coords[,2], words = rownames(tansy_tab), cex = 0.25, new = FALSE)
+
+pops$geo_grp <- as.factor(pops$geo_grp)
+pops$ECS_fac2 <- as.factor(pops$ECS_fac2)
+pops_df <- pops
+
+coordinates(pops) <- ~ lon + lat
+proj4string(pops) <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
+
+pops_df$finestructure_grp <- as.factor(pops_df$finestructure_grp)
+pops_df$fs_clust_4 <- as.factor(pops_df$fs_clust_4)
+
+#cluster 1 pops
+clust1 <- which(pops_df$cs.K2.1>=0.5)
+
+xy_1 <- xy[clust1]
+
+#cluster 2 pops
+clust2 <- which(pops_df$cs.K2.1<=0.5)
+
+xy_2 <- xy[clust2]
+```
+
+
+### Sample Eco-Regions
+
+The MN Department of Natural Resources has divided the state using the Ecological Classification System using the National Hierarchical Framework of Ecological Units ([ECS website](https://www.dnr.state.mn.us/ecs/index.html)). We assigned each population to a geographical grouping as indicated by the colors in the map. Groupings cluster populations that were similar in geography and ecology.
+```{r eco_region}
+midwest <- map_data("county", "minnesota")
+midwest <- midwest[midwest$long > -100 & midwest$long < -89.5 &
+                         midwest$lat > 41 & midwest$lat < 52,]
+
+MNsites <- ggplot() + geom_path(data = midwest, mapping = aes(x = long, y = lat, group = group), color = "gray") +
+  geom_point(data = pops_df, mapping = aes(x = lon, y = lat, col = ECS_SUBSEC, group = name)) +
+  scale_color_manual(values = ECS_cols) +
+  coord_fixed(ratio = 1.5) +
+  theme_bw()
+
+ggplotly(MNsites)
+
+```
+
+
+### Tansy spatially-explicit Genomic Structure
+We used a conStruct analysis of populations to determine if there was spatially-explicit structure to genomic variation (GBS dataset of 3071 polymorphic loci). The analysis for K=2 again highlighted two geographically partitioned groupings. Group 1 (red) found mostly in the northeastern portion of the state, particularly St. Louis Co., along the North Shore, and into North Central MN. Group 2 has two distinct clusters - one in the Northwest portion of the state and the other in a portion of the forests of Lake Co. in the Northeast. Southern populations tend to be an equal sample of the two major groupings.
+```{r conStruct_figure}
+
+struct2 <- magick::image_read("conStruct/spatial/spK2_250K_structure.plot.chain_1.pdf")
+#struct2_rot <- image_rotate(struct2, 270)
+pie2 <- magick::image_read("conStruct/spatial/spK2_250K_pie.map.chain_1.pdf")
+
+conStructK2 <- c(struct2, pie2)
+image_append(image_scale(conStructK2, "x500"))
+
+```
+
+## Environmental Variables {.tabset .tabset-pills}
+We downloaded and processed a broad range of environmental variables that may affect tansy population survival, growth, and dispersal for use in niche analyses. More detailed information about where data was obtained and how it was processed can be found in our [GitHub](https://github.com/rdbrunquist/common-tansy-landscape-genomics)
+
+```{r env_data, echo=FALSE}
+MN_env_stack <- stack("spatial data/MN_centric_environmental_rasters/MN_env_varbs.grd")
+MN_plant_growth_env_3_stack <- stack("spatial data/MN_centric_environmental_rasters/MN_plant_growth_env_3_varbs.grd")
+MN_plant_growth_clim_3_stack <- stack("spatial data/MN_centric_environmental_rasters/MN_plant_growth_clim_3_varbs.grd")
+```
+
+
+# Niche Overlap analyses {.tabset .tabset-pills}
+
+## Soil and Climate Niche {.tabset .tabset-pills}
+
+### Hill-Smith analysis on mixed data types- aggregate environment {.tabset}
+
+#### Ordination plot
+
+```{r}
+#create background points for total climate
+bkgrd <- spsample(MN_poly, 1000, type='stratified', iter = 1000)
+projection(bkgrd) <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
+
+names <- vector(length = length(xy))
+names[clust1] <- "clust1"
+names[clust2] <- "clust2"
+IDs <- c(names, rep("bkgrd", length(bkgrd)))
+
+MN_pts <- as_tibble(rbind(xy@coords, bkgrd@coords))
+MN_pts$ID <- IDs
+
+land_use_class <- raster::subset(MN_env_stack, 23)
+env_varbs_analyze <- stack(MN_plant_growth_env_3_stack, land_use_class)
+
+site_envs <- raster::extract(env_varbs_analyze, MN_pts[,1:2])
+site_envs_1 <- as_tibble(site_envs)
+site_envs_1$IDs <- IDs
+site_envs_2 <- na.omit(site_envs_1)
+site_envs_2$drainage <- as.factor(site_envs_2$drainage)
+site_envs_2$land_class <- as.factor(site_envs_2$land_class)
+
+pca_clim <- dudi.pca(site_envs_2[,1:3], scannf = F, nf=2) 
+ecospat.plot.contrib(contrib = pca_clim$co, eigen = pca_clim$eig)
+
+
+mix_env <- dudi.hillsmith(site_envs_2[,1:9], scannf = F, nf = 5)
+
+
+ecospat.plot.contrib(contrib = mix_env$co[,1:2], eigen = mix_env$eig)
+ecospat.plot.contrib(contrib = mix_env$co[,2:3], eigen = mix_env$eig)
+ecospat.plot.contrib(contrib = mix_env$co[,c(1,3)], eigen = mix_env$eig)
+
+
+```
+
+#### Mixed CA scores
+
+```{r}
+mix.scores.global <- mix_env$li
+
+mix.scores.cl1 <- suprow(mix_env, site_envs_2[which(site_envs_2$IDs=="clust1"), 1:9])$li
+
+mix.scores.cl2 <- suprow(mix_env, site_envs_2[which(site_envs_2$IDs=="clust2"), 1:9])$li
+
+mix.scores.mn <- suprow(mix_env, site_envs_2[which(site_envs_2$IDs=="bkgrd"), 1:9])$li
+
+
+mix.scores.tot <- as_tibble(cbind(site_envs_2$IDs, mix.scores.global[,1:2]))
+colnames(mix.scores.tot) <- c("IDs", "Axis1", "Axis2")
+
+biplot_env <- ggplot(data = mix.scores.tot, aes(x = Axis1, y = Axis2, color = IDs, shape = IDs)) +
+  geom_point() +
+  geom_point(data = subset(mix.scores.tot, IDs == "clust1"), aes(x = Axis1, y = Axis2, color = IDs, shape = IDs)) +
+  geom_point(data = subset(mix.scores.tot, IDs == "clust2"), aes(x = Axis1, y = Axis2, color = IDs, shape = IDs)) +
+  scale_shape_manual(values = c("clust1" = 19, "clust2" = 19, "bkgrd" = 21)) +
+  scale_color_manual(values = c("clust1" = "green", "clust2" = "red", "bkgrd" = "gray80")) +
+  theme_bw()
+
+biplot_env
+```
+
+
+### Testing for niche differentiation {.tabset}
+
+#### Calculate and plot niche space {.tabset .tabset-pills}
+
+##### Axis 1 v. 2
+
+```{r}
+
+mix.grid.clim.clust1 <- ecospat.grid.clim.dyn(glob=mix.scores.global[,1:2],
+                                          glob1=mix.scores.mn[,1:2],
+                                          sp=mix.scores.cl1[,1:2], R=100,
+                                          th.sp = 0,
+                                          th.env = 0,
+                                          extend.extent = c(-1,1, -1, 1))
+
+mix.grid.clim.clust2 <- ecospat.grid.clim.dyn(glob=mix.scores.global[,1:2],
+                                          glob1=mix.scores.mn[,1:2],
+                                          sp=mix.scores.cl2[,1:2], R=100,
+                                          th.sp = 0,
+                                          th.env = 0,
+                                          extend.extent = c(-1,1, -1, 1))
+
+ecospat.plot.niche.dyn(mix.grid.clim.clust1, mix.grid.clim.clust2, quant = 0.1, interest = 2, 
+                       title = "Niche overlap", name.axis1 = "Axis1", name.axis2 = "Axis2",
+                                          col.unf = "#882255", col.exp = "#88CCEE", 
+                                          col.stab = "#FFDE47", colZ1 = "gray50", colZ2 = "gray80",
+                                          transparency = 0)
+ecospat.shift.centroids(mix.scores.cl1[,1:2], mix.scores.cl2[,1:2], mix.scores.mn[,1:2], mix.scores.mn[,1:2])
+
+{cairo_pdf(filename = "figures/enm_niche_overlap_axes_1_2.pdf", height = 6, width = 8)
+  ecospat.plot.niche.dyn(mix.grid.clim.clust1, mix.grid.clim.clust2, quant = 0.1, interest = 2, 
+                       title = "Niche overlap", name.axis1 = "PC1", name.axis2 = "PC2",
+                                          col.unf = "#882255", col.exp = "#88CCEE", 
+                                          col.stab = "#FFDE47", colZ1 = "gray50", colZ2 = "gray80",
+                                          transparency = 0)
+ecospat.shift.centroids(mix.scores.cl1[,1:2], mix.scores.cl2[,1:2], mix.scores.mn[,1:2], mix.scores.mn[,1:2])
+  }
+dev.off()
+
+```
+
+##### Axis 1 v. 3
+
+```{r}
+
+mix.grid.clim.clust1 <- ecospat.grid.clim.dyn(glob=mix.scores.global[,c(1,3)],
+                                          glob1=mix.scores.mn[,c(1,3)],
+                                          sp=mix.scores.cl1[,c(1,3)], R=100,
+                                          th.sp = 0,
+                                          th.env = 0,
+                                          extend.extent = c(-1,1, -1, 1))
+
+mix.grid.clim.clust2 <- ecospat.grid.clim.dyn(glob=mix.scores.global[,c(1,3)],
+                                          glob1=mix.scores.mn[,c(1,3)],
+                                          sp=mix.scores.cl2[,c(1,3)], R=100,
+                                          th.sp = 0,
+                                          th.env = 0,
+                                          extend.extent = c(-1,1, -1, 1))
+
+ecospat.plot.niche.dyn(mix.grid.clim.clust1, mix.grid.clim.clust2, quant = 0.1, interest = 2, 
+                       title = "Niche overlap", name.axis1 = "PC1", name.axis2 = "PC3",
+                                          col.unf = "#882255", col.exp = "#88CCEE", 
+                                          col.stab = "#FFDE47", colZ1 = "gray50", colZ2 = "gray80",
+                                          transparency = 0)
+ecospat.shift.centroids(mix.scores.cl1[,c(1,3)], mix.scores.cl2[,c(1,3)], mix.scores.mn[,c(1,3)], mix.scores.mn[,c(1,3)])
+
+
+{cairo_pdf(filename = "figures/enm_niche_overlap_axes_1_3.pdf", height = 6, width = 8)
+ ecospat.plot.niche.dyn(mix.grid.clim.clust1, mix.grid.clim.clust2, quant = 0.1, interest = 2, 
+                       title = "Niche overlap", name.axis1 = "PC1", name.axis2 = "PC3",
+                                          col.unf = "#882255", col.exp = "#88CCEE", 
+                                          col.stab = "#FFDE47", colZ1 = "gray50", colZ2 = "gray80",
+                                          transparency = 0)
+ecospat.shift.centroids(mix.scores.cl1[,c(1,3)], mix.scores.cl2[,c(1,3)], mix.scores.mn[,c(1,3)], mix.scores.mn[,c(1,3)])
+  }
+dev.off()
+
+```
+
+##### Axis 2 v. 3
+
+```{r}
+
+
+mix.grid.clim.clust1 <- ecospat.grid.clim.dyn(glob=mix.scores.global[,2:3],
+                                          glob1=mix.scores.mn[,2:3],
+                                          sp=mix.scores.cl1[,2:3], R=100,
+                                          th.sp = 0,
+                                          th.env = 0,
+                                          extend.extent = c(-1,1, -1, 1))
+
+mix.grid.clim.clust2 <- ecospat.grid.clim.dyn(glob=mix.scores.global[,2:3],
+                                          glob1=mix.scores.mn[,2:3],
+                                          sp=mix.scores.cl2[,2:3], R=100,
+                                          th.sp = 0,
+                                          th.env = 0,
+                                          extend.extent = c(-1,1, -1, 1))
+
+ecospat.plot.niche.dyn(mix.grid.clim.clust1, mix.grid.clim.clust2, quant = 0.1, interest = 2, 
+                       title = "Niche overlap", name.axis1 = "PC2", name.axis2 = "PC3",
+                                          col.unf = "#882255", col.exp = "#88CCEE", 
+                                          col.stab = "#FFDE47", colZ1 = "gray50", colZ2 = "gray80",
+                                          transparency = 0)
+ecospat.shift.centroids(mix.scores.cl1[,2:3], mix.scores.cl2[,2:3], mix.scores.mn[,2:3], mix.scores.mn[,2:3])
+
+{cairo_pdf(filename = "figures/enm_niche_overlap_axes_2_3.pdf", height = 6, width = 8)
+ ecospat.plot.niche.dyn(mix.grid.clim.clust1, mix.grid.clim.clust2, quant = 0.1, interest = 2, 
+                       title = "Niche overlap", name.axis1 = "PC2", name.axis2 = "PC3",
+                                          col.unf = "#882255", col.exp = "#88CCEE", 
+                                          col.stab = "#FFDE47", colZ1 = "gray50", colZ2 = "gray80",
+                                          transparency = 0)
+ecospat.shift.centroids(mix.scores.cl1[,2:3], mix.scores.cl2[,2:3], mix.scores.mn[,2:3], mix.scores.mn[,2:3])
+  }
+dev.off()
+
+```
+
+#### Tests for overlap equivalency and similarity
+
+
+```{r}
+
+#Overlap
+
+D.overlap <- ecospat.niche.overlap(mix.grid.clim.clust1, mix.grid.clim.clust2, cor = TRUE)$D
+paste(sprintf("The niche overlap is %f", D.overlap))
+
+#Niche equivalency
+
+eq.test <- ecospat.niche.equivalency.test(mix.grid.clim.clust1, mix.grid.clim.clust2, rep = 1000,
+                                          intersection = 0.1,
+                                          overlap.alternative = "lower",
+                                          expansion.alternative = "higher",
+                                          stability.alternative = "lower",
+                                          unfilling.alternative = "lower")
+
+ecospat.plot.overlap.test(eq.test, "D", "Equivalency")
+ecospat.plot.overlap.test(eq.test, "expansion", "Equivalency")
+ecospat.plot.overlap.test(eq.test, "stability", "Equivalency")
+ecospat.plot.overlap.test(eq.test, "unfilling", "Equivalency")
+
+sim.test <- ecospat.niche.similarity.test(mix.grid.clim.clust1, mix.grid.clim.clust2, rep=1000,
+                                          intersection = 0.1,
+                                          overlap.alternative = "lower",
+                                          expansion.alternative = "higher",
+                                          stability.alternative = "lower",
+                                          unfilling.alternative = "lower",
+                                          rand.type = 2)
+
+ecospat.plot.overlap.test(sim.test, "D", "Similarity")
+ecospat.plot.overlap.test(sim.test, "expansion", "Similarity")
+ecospat.plot.overlap.test(sim.test, "stability", "Similarity")
+ecospat.plot.overlap.test(sim.test, "unfilling", "Similarity")
+```
+
+
+## Climatic Niche {.tabset .tabset-pills}
+
+### PCA - climate {.tabset}
+
+#### PCA plot
+
+```{r}
+#create background points for total climate
+bkgrd <- spsample(MN_poly, 1000, type='stratified', iter = 1000)
+projection(bkgrd) <- CRS("+proj=longlat +ellps=WGS84 +no_defs")
+
+IDs <- c(rep("site", length(xy)), rep("bkgrd", length(bkgrd)))
+
+MN_pts <- as_tibble(rbind(xy@coords, bkgrd@coords))
+MN_pts$ID <- IDs
+
+site_envs <- raster::extract(MN_plant_growth_clim_3_stack, MN_pts[,1:2])
+
+pca_env <- dudi.pca(site_envs, scannf = F, nf=2)
+ecospat.plot.contrib(contrib = pca_env$co, eigen = pca_env$eig)
+```
+
+#### PCA scores
+
+```{r}
+scores.global <- pca_env$li
+
+scores.cl1 <- suprow(pca_env, site_envs[clust1, 1:3])$li
+
+scores.cl2 <- suprow(pca_env, site_envs[clust2, 1:3])$li
+
+scores.mn <- suprow(pca_env, site_envs[which(MN_pts$ID=="bkgrd"), 1:3])$li
+
+names <- vector(length = length(xy))
+names[clust1] <- "clust1"
+names[clust2] <- "clust2"
+
+IDs_spec <- c(names, rep("bkgrd", length(bkgrd)))
+scores.tot <- as_tibble(cbind(IDs_spec, scores.global))
+
+biplot_env <- ggplot(data = scores.tot, aes(x = Axis1, y = Axis2, color = IDs_spec, shape = IDs_spec)) +
+  geom_point() +
+  geom_point(data = subset(scores.tot, IDs_spec == "clust1"), aes(x = Axis1, y = Axis2, color = IDs_spec, shape = IDs_spec)) +
+  geom_point(data = subset(scores.tot, IDs_spec == "clust2"), aes(x = Axis1, y = Axis2, color = IDs_spec, shape = IDs_spec)) +
+  scale_shape_manual(values = c("clust1" = 19, "clust2" = 19, "bkgrd" = 21)) +
+  scale_color_manual(values = c("clust1" = "green", "clust2" = "red", "bkgrd" = "gray80")) +
+  theme_bw()
+
+biplot_env
+```
+
+### Testing for niche differentiation {.tabset}
+
+#### Calculate and plot niche space
+
+```{r}
+
+grid.clim.clust1 <- ecospat.grid.clim.dyn(glob=scores.global,
+                                          glob1=scores.mn,
+                                          sp=scores.cl1, R=100,
+                                          th.sp = 0)
+
+grid.clim.clust2 <- ecospat.grid.clim.dyn(glob=scores.global,
+                                          glob1=scores.mn,
+                                          sp=scores.cl2, R=100,
+                                          th.sp = 0)
+
+ecospat.plot.niche.dyn(grid.clim.clust1, grid.clim.clust2, quant = 0.25, interest = 2, title = "Niche overlap", name.axis1 = "PC1", name.axis2 = "PC2")
+
+ecospat.shift.centroids(scores.cl1, scores.cl2, scores.mn, scores.mn)
+```
+
+#### Tests for overlap equivalency and similarity
+
+```{r}
+
+#Overlap
+
+D.overlap <- ecospat.niche.overlap(grid.clim.clust1, grid.clim.clust2, cor = TRUE)$D
+paste(sprintf("The niche overlap is %f", D.overlap))
+
+#Niche equivalency
+
+eq.test <- ecospat.niche.equivalency.test(grid.clim.clust1, grid.clim.clust2, rep = 1000,
+                                          intersection = 0.1,
+                                          overlap.alternative = "lower",
+                                          expansion.alternative = "higher",
+                                          stability.alternative = "lower",
+                                          unfilling.alternative = "lower")
+
+ecospat.plot.overlap.test(eq.test, "D", "Equivalency")
+
+
+sim.test <- ecospat.niche.similarity.test(grid.clim.clust1, grid.clim.clust2, rep=1000,
+                                          intersection = 0.1,
+                                          overlap.alternative = "lower",
+                                          expansion.alternative = "higher",
+                                          stability.alternative = "lower",
+                                          unfilling.alternative = "lower",
+                                          rand.type = 2)
+
+ecospat.plot.overlap.test(sim.test, "D", "Similarity")
+ecospat.plot.overlap.test(sim.test, "expansion", "Similarity")
+ecospat.plot.overlap.test(sim.test, "stability", "Similarity")
+ecospat.plot.overlap.test(sim.test, "unfilling", "Similarity")
+```
+
+
+
+
+

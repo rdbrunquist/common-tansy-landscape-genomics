@@ -1,0 +1,27 @@
+Land Classification and Impervious Surfaces: 
+Main page: https://www.mrlc.gov/
+
+Land Classification:
+The U.S. Geological Survey (USGS), in partnership with several federal agencies, has developed and released five National Land Cover Database (NLCD) products over the past two decades: NLCD 1992, 2001, 2006, 2011 and 2016. These products provide spatially explicit and reliable information on the Nation’s land cover and land cover change. 
+
+Land Cover Data Download: https://www.mrlc.gov/data?f%5B0%5D=category%3Aland%20cover&f%5B1%5D=region%3Aconus
+NLCD 2019 Land Cover (CONUS): https://www.mrlc.gov/data/nlcd-2019-land-cover-conus
+Classification Categories: https://www.mrlc.gov/data/legends/national-land-cover-database-class-legend-and-description
+
+Processing:
+1. Downloaded and extracted data
+2. Reprojected from Albers conical to WGS84
+3. Clipped to an Minnesota centric bounding box (-98, 43, -89, 50)
+4. Resampled to either 30sec or 2.5 minutes using nearest neighbor methods
+
+Imperviousness: NLCD imperviousness products represent urban impervious surfaces as a percentage of developed surface over every 30-meter pixel in the United States.
+
+Impervious Surface Data Download:https://www.mrlc.gov/data?f%5B0%5D=category%3Aurban%20imperviousness&f%5B1%5D=region%3Aconus
+NLCD 2019 Urban Imperviousness: https://www.mrlc.gov/data/nlcd-2019-developed-imperviousness-descriptor-conus
+Classification Legend: 
+
+Processing:
+1. Downloaded and extracted data
+2. Reprojected from Albers Conical to WGS84
+3. Clipped to an Minnesota centric bounding box (-98, 43, -89, 50)
+4. Resampled to either 30sec or 2.5 minutes using bilinear averaging methods (2.5min) or nearest neighbor (30sec)

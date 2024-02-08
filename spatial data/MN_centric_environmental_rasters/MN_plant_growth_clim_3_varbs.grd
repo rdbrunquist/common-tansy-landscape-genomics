@@ -1,0 +1,25 @@
+[general]
+creator=R package 'raster'
+created=2022-05-09 18:38:38
+[georeference]
+nrows=840
+ncols=1080
+xmin=-98
+ymin=43
+xmax=-89
+ymax=50
+projection=+proj=longlat +datum=WGS84 +no_defs
+[data]
+datatype=FLT4S
+byteorder=little
+nbands=3
+bandorder=BIL
+minvalue=14.1439208984375:-27.3920993804932:178
+maxvalue=22.6820335388184:-10.8000001907349:347.801391601562
+nodatavalue=-3.4e+38
+[legend]
+legendtype=
+values=
+color=
+[description]
+layername=mean_temp_warm_q:min_temp_cold_m:precip_warm_q
